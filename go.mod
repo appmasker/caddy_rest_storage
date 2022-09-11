@@ -1,4 +1,4 @@
-module github.com/fluidnode/caddy_rest_storage
+module github.com/appmasker/caddy_rest_storage
 
 go 1.18
 
