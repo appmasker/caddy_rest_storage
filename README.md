@@ -21,3 +21,12 @@ In addition your `endpoint`, the following paths must be handled by your API:
 
 ## API Key
 A hard-coded `x-api-key` header is sent to your endpoint. Use an auth token as the value (defined by `api_key`) to authenticate the request.
+
+## Example Config
+```json
+  "storage": {
+    "module": "rest",
+    "endpoint": "https://myapi.com/handle-tls-storage-methods",
+    "api_key": "VERY-SECURE-API-KEY"
+  }
+```
