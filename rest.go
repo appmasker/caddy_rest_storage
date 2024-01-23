@@ -15,11 +15,13 @@ import (
 	"github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/caddyconfig/caddyfile"
 	"github.com/caddyserver/certmagic"
+	"go.uber.org/zap"
 )
 
 type RestStorage struct {
 	Endpoint string `json:"endpoint"`
 	ApiKey   string `json:"api_key"`
+	logger 	 *zap.Logger 
 }
 
 func init() {
@@ -56,6 +58,7 @@ func (r *RestStorage) Provision(ctx caddy.Context) error {
 
 	repl := caddy.NewReplacer()
 	r.ApiKey = repl.ReplaceAll(r.ApiKey, "")
+	r.logger = ctx.Logger(r)
 	return nil
 }
 
@@ -112,15 +115,24 @@ func (r *RestStorage) Lock(ctx context.Context, key string) error {
 
 		resp.Body.Close()
 
+		// The key was successfully locked
 		if resp.StatusCode == 201 {
 			return nil
 		}
 
-		if resp.StatusCode != 412 {
-			return fmt.Errorf("unknown status code received: %v", resp.StatusCode)
+		if resp.StatusCode == 423 {
+			// 423: The key is already locked
+			r.logger.Info(fmt.Sprintf("Key %v is already locked.", key))
+		} else if resp.StatusCode == 412 {
+			// 412: An error occurred
+			r.logger.Error(fmt.Sprintf("Error locking key %v: %v ; Will try again.\n", key, resp.StatusCode))
+		} else {
+			// unknown error. return it
+			return fmt.Errorf("Unknown status code received: %v", resp.StatusCode)
 		}
 
-		time.Sleep(1 * time.Second)
+		// Wait 5 seconds before trying again
+		time.Sleep(5 * time.Second)
 	}
 }
 
